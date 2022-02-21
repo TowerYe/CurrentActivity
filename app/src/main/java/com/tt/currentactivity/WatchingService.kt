@@ -100,9 +100,11 @@ class WatchingService :
         return topActivityName
     }
 
-    override fun windowHide() {
-        lastName = ""
-        timer?.cancel()
-        timer = null
+    override fun windowHide(isHide: Boolean) {
+        if (isHide) {
+            lastName = ""
+            timer?.cancel()
+            timer = null
+        }
     }
 }

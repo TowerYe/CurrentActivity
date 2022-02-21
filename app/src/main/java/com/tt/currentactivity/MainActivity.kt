@@ -18,29 +18,30 @@ import com.tt.currentactivity.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     private val mViewBinding: ActivityMainBinding by lazy { ActivityMainBinding.inflate(layoutInflater) }
+    private var isUseAccessibilityService = false
+    private var isManualHide = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(mViewBinding.root)
         mViewBinding.swFloat.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                startWatchingService()
+                if (isUseAccessibilityService) {
+                    floatingWindow?.show()
+                } else {
+                    startWatchingService()
+                }
             } else {
                 floatingWindow?.hide()
             }
+            isManualHide = !isChecked
         }
     }
 
     override fun onResume() {
         super.onResume()
-        mViewBinding.swFloat.isChecked = false
         if (isCanDrawOverlays()) {
-            if (isUsageStatsPermissionEnabled()) {
-                mViewBinding.swFloat.isChecked = true
-                return
-            }
-
-            showUsageAccessPermissionDialog()
+            getTopActivity()
             return
         }
 
@@ -53,6 +54,44 @@ class MainActivity : AppCompatActivity() {
             addCategory(Intent.CATEGORY_HOME)
             startActivity(this)
         }
+    }
+
+    private fun getTopActivity() {
+        if (isUseAccessibilityService) {
+            useAccessibilityToGet()
+        } else {
+            useUsageStateToGet()
+        }
+    }
+
+    /**
+     * 使用Accessibility来获取栈顶Activity
+     */
+    private fun useAccessibilityToGet() {
+        if (isAccessibilityEnabled()) {
+            if (!isManualHide) {
+                mViewBinding.swFloat.isChecked = true
+            }
+            return
+        }
+
+        showAccessibilityPermissionDialog()
+        return
+    }
+
+    /**
+     * 使用UsageState来获取栈顶Activity
+     */
+    private fun useUsageStateToGet() {
+        if (isUsageStatsPermissionEnabled()) {
+            if (!isManualHide) {
+                mViewBinding.swFloat.isChecked = true
+            }
+            return
+        }
+
+        showUsageAccessPermissionDialog()
+        return
     }
 
     /**
@@ -112,7 +151,7 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("去设置") { dialogInterface, _ ->
                 startActivity(
                     Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
-                        data = Uri.parse("package:" + this@MainActivity.packageName)
+                        // data = Uri.parse("package:" + this@MainActivity.packageName)
                     }
                 )
                 dialogInterface.dismiss()

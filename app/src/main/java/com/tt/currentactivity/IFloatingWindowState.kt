@@ -6,5 +6,5 @@ package com.tt.currentactivity
  * @description
  */
 interface IFloatingWindowState {
-    fun windowHide()
+    fun windowHide(isHide: Boolean)
 }

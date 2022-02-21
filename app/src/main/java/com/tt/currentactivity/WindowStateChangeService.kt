@@ -5,6 +5,8 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.ComponentName
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 
@@ -13,9 +15,12 @@ import android.view.accessibility.AccessibilityEvent
  * @date 2022/2/9-17:19
  * @description
  */
-class WindowStateChangeService : AccessibilityService() {
+class WindowStateChangeService :
+    AccessibilityService(),
+    IFloatingWindowState {
 
-    private val floatingWindow: FloatingWindow by lazy { FloatingWindow(this) }
+    private val mHandler by lazy { Handler(Looper.getMainLooper()) }
+    private var isFloatingWindowHide = false
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -25,6 +30,7 @@ class WindowStateChangeService : AccessibilityService() {
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
             flags = AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
         }
+        FloatingWindow.callback = this
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -36,7 +42,11 @@ class WindowStateChangeService : AccessibilityService() {
                 Log.d("AccessibilityService", "packageName: $packageName, clsName: $clsName")
                 val activityInfo = tryGetActivity(ComponentName(packageName, clsName))
                 activityInfo?.let {
-                    floatingWindow.onWindowChange(packageName, clsName)
+                    if (!isFloatingWindowHide) {
+                        mHandler.post {
+                            MainActivity.windowChange(this, "$packageName\n$clsName")
+                        }
+                    }
                 }
             }
         }
@@ -52,5 +62,9 @@ class WindowStateChangeService : AccessibilityService() {
         } catch (e: PackageManager.NameNotFoundException) {
             null
         }
+    }
+
+    override fun windowHide(isHide: Boolean) {
+        isFloatingWindowHide = isHide
     }
 }

@@ -63,15 +63,22 @@ class FloatingWindow(private val mContext: Context) {
         }
     }
 
-    private fun show() {
+    fun show() {
+        if (isShow) {
+            return
+        }
         mWindowManager.addView(mBinding.root, mParams)
         isShow = true
+        callback?.windowHide(false)
     }
 
     fun hide() {
+        if (!isShow) {
+            return
+        }
         mWindowManager.removeView(mBinding.root)
         isShow = false
-        callback?.windowHide()
+        callback?.windowHide(true)
     }
 
     companion object {
